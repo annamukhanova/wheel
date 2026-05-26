@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Колесо Баланса - Анна Муханова</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --cream: #f5f0e8; --dark: #1a1610; --gold: #c4963a; --muted: #8a7d6b; --bg: #faf7f2;
+  }
+  body {
+    font-family: 'Montserrat', sans-serif;
+    background: var(--bg); color: var(--dark);
+    min-height: 100vh; display: flex; flex-direction: column;
+    align-items: center; padding: 0 20px 60px;
+  }
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 0; opacity: 0.4;
+  }
+  .wrapper { position: relative; z-index: 1; width: 100%; max-width: 980px; }
+  .topbar {
+    width: 100vw; margin-left: calc(-50vw + 50%);
+    background: var(--dark); padding: 14px 40px;
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 48px;
+  }
+  .topbar-name { font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 18px; color: white; letter-spacing: 0.06em; }
+  .topbar-name em { font-style: italic; color: var(--gold); }
+  .topbar-role { font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(255,255,255,0.45); font-weight: 300; }
+  header { text-align: center; margin-bottom: 48px; }
+  .eyebrow { font-weight: 300; font-size: 10px; letter-spacing: 0.35em; text-transform: uppercase; color: var(--gold); margin-bottom: 14px; }
+  h1 { font-family: 'Cormorant Garamond', serif; font-weight: 300; font-size: clamp(36px, 6vw, 56px); line-height: 1.1; letter-spacing: 0.02em; }
+  h1 em { font-style: italic; color: var(--gold); }
+  .subtitle { margin-top: 12px; font-size: 12px; color: var(--muted); letter-spacing: 0.08em; font-weight: 300; }
+  .divider { width: 48px; height: 1px; background: var(--gold); margin: 20px auto; opacity: 0.6; }
+  .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+  @media (max-width: 700px) { .main-grid { grid-template-columns: 1fr; } }
+  .sliders-panel { background: white; border: 1px solid rgba(196,150,58,0.2); border-radius: 2px; padding: 32px 28px; box-shadow: 0 2px 24px rgba(26,22,16,0.06); }
+  .panel-title { font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 18px; letter-spacing: 0.04em; margin-bottom: 24px; padding-bottom: 14px; border-bottom: 1px solid rgba(196,150,58,0.2); }
+  .segment-row { margin-bottom: 22px; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .seg-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .seg-name { font-size: 11px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; }
+  .seg-value { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 600; color: var(--gold); min-width: 24px; text-align: right; }
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 2px; background: linear-gradient(to right, var(--gold) 0%, var(--gold) var(--pct, 0%), #e0d9ce var(--pct, 0%), #e0d9ce 100%); outline: none; border-radius: 2px; cursor: pointer; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--gold); border: 2px solid white; box-shadow: 0 0 0 1px var(--gold), 0 2px 8px rgba(196,150,58,0.3); transition: transform 0.15s; }
+  input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+  input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: var(--gold); border: 2px solid white; cursor: pointer; }
+  .wheel-panel { display: flex; flex-direction: column; align-items: center; gap: 20px; position: sticky; top: 24px; }
+  canvas { width: 100%; max-width: 380px; height: auto; filter: drop-shadow(0 8px 32px rgba(26,22,16,0.12)); }
+  .score-card { background: white; border: 1px solid rgba(196,150,58,0.2); border-radius: 2px; padding: 20px 24px; width: 100%; max-width: 380px; box-shadow: 0 2px 16px rgba(26,22,16,0.05); display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+  .score-label { font-size: 10px; letter-spacing: 0.25em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .score-big { font-family: 'Cormorant Garamond', serif; font-size: 40px; font-weight: 300; line-height: 1; }
+  .score-big span { font-size: 18px; color: var(--muted); }
+  .btn-analyze { padding: 12px 20px; background: var(--gold); border: none; color: white; font-family: 'Montserrat', sans-serif; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; cursor: pointer; border-radius: 1px; transition: all 0.2s; white-space: nowrap; flex-shrink: 0; }
+  .btn-analyze:hover { background: #a87d2e; }
+  .btn-analyze:disabled { opacity: 0.5; cursor: not-allowed; }
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(26,22,16,0.6); backdrop-filter: blur(4px); z-index: 100; align-items: center; justify-content: center; }
+  .modal-overlay.active { display: flex; }
+  .modal { background: white; border: 1px solid rgba(196,150,58,0.3); border-radius: 2px; padding: 40px 36px; width: 100%; max-width: 420px; margin: 20px; animation: fadeUp 0.3s ease; box-shadow: 0 16px 64px rgba(26,22,16,0.2); }
+  .modal-eyebrow { font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold); margin-bottom: 12px; }
+  .modal-title { font-family: 'Cormorant Garamond', serif; font-weight: 300; font-size: 28px; line-height: 1.2; margin-bottom: 10px; }
+  .modal-title em { font-style: italic; color: var(--gold); }
+  .modal-desc { font-size: 12px; color: var(--muted); line-height: 1.7; margin-bottom: 28px; font-weight: 300; }
+  .modal-divider { width: 32px; height: 1px; background: var(--gold); opacity: 0.4; margin-bottom: 24px; }
+  .field-label { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 8px; }
+  .field-input { width: 100%; padding: 12px 16px; border: 1px solid rgba(196,150,58,0.3); border-radius: 1px; background: var(--bg); font-family: 'Montserrat', sans-serif; font-size: 14px; color: var(--dark); outline: none; transition: border-color 0.2s; margin-bottom: 16px; }
+  .field-input:focus { border-color: var(--gold); }
+  .modal-actions { display: flex; gap: 12px; margin-top: 8px; }
+  .btn-submit { flex: 1; padding: 13px; background: var(--dark); border: none; color: white; font-family: 'Montserrat', sans-serif; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; cursor: pointer; border-radius: 1px; transition: all 0.2s; }
+  .btn-submit:hover { background: var(--gold); }
+  .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-skip { padding: 13px 18px; background: transparent; border: 1px solid rgba(196,150,58,0.3); color: var(--muted); font-family: 'Montserrat', sans-serif; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; border-radius: 1px; transition: all 0.2s; }
+  .btn-skip:hover { border-color: var(--muted); }
+  .modal-note { font-size: 10px; color: var(--muted); margin-top: 14px; line-height: 1.6; font-weight: 300; opacity: 0.8; }
+  .analysis-wrap { width: 100%; margin-top: 32px; }
+  .analysis-card { background: white; border: 1px solid rgba(196,150,58,0.2); border-radius: 2px; padding: 36px; box-shadow: 0 2px 24px rgba(26,22,16,0.06); animation: fadeUp 0.5s ease both; }
+  .insights-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 28px; }
+  @media (max-width: 600px) { .insights-grid { grid-template-columns: 1fr; } }
+  .insight-box { padding: 16px 18px; border-radius: 2px; border: 1px solid transparent; }
+  .insight-box.low { background: #fff5f5; border-color: #f0c0c0; }
+  .insight-box.mid { background: #fffbf0; border-color: rgba(196,150,58,0.3); }
+  .insight-box.high { background: #f0fff8; border-color: #b0dcc8; }
+  .insight-label { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 8px; font-weight: 500; }
+  .insight-box.low .insight-label { color: #c07070; }
+  .insight-box.mid .insight-label { color: var(--gold); }
+  .insight-box.high .insight-label { color: #4a9a7a; }
+  .insight-items { font-size: 12px; line-height: 1.6; }
+  .insight-items .item { display: flex; justify-content: space-between; }
+  .item-score { font-family: 'Cormorant Garamond', serif; font-size: 16px; font-weight: 600; }
+  .analysis-divider { width: 32px; height: 1px; background: var(--gold); opacity: 0.4; margin: 24px 0; }
+  .analysis-text { font-size: 13px; line-height: 1.85; color: #2e2a24; font-weight: 300; }
+  .analysis-text p { margin-bottom: 16px; }
+  .analysis-text p:last-child { margin-bottom: 0; }
+  .btn-reset { display: inline-block; margin-top: 16px; padding: 10px 24px; background: transparent; border: 1px solid rgba(196,150,58,0.4); color: var(--muted); font-family: 'Montserrat', sans-serif; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; border-radius: 1px; transition: all 0.2s; }
+  .btn-reset:hover { border-color: var(--gold); color: var(--gold); }
+  footer-note { display: block; text-align: center; margin-top: 48px; font-size: 10px; letter-spacing: 0.15em; color: var(--muted); opacity: 0.6; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-name">Анна <em>Муханова</em></div>
+  <div class="topbar-role">Коуч для жизни и бизнеса</div>
+</div>
+
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <p class="modal-eyebrow">Один шаг до результата</p>
+    <h2 class="modal-title">Оставь номер -<br>получи <em>анализ</em></h2>
+    <div class="modal-divider"></div>
+    <p class="modal-desc">Анна свяжется с тобой лично и разберёт твоё колесо - что стоит за цифрами и с чего начать движение.</p>
+    <label class="field-label" for="phone-input">Номер телефона</label>
+    <input class="field-input" id="phone-input" type="tel" placeholder="+7 999 000 00 00" />
+    <label class="field-label" for="name-input">Как тебя зовут</label>
+    <input class="field-input" id="name-input" type="text" placeholder="Имя" />
+    <div class="modal-actions">
+      <button class="btn-submit" id="btn-submit" onclick="submitAndAnalyze()">Получить анализ</button>
+      <button class="btn-skip" onclick="skipAndAnalyze()">Пропустить</button>
+    </div>
+    <p class="modal-note">Данные используются только для связи с тобой. Никакого спама.</p>
+  </div>
+</div>
+
+<div class="wrapper">
+  <header>
+    <p class="eyebrow">Инструмент саморефлексии</p>
+    <h1>Колесо <em>баланса</em></h1>
+    <div class="divider"></div>
+    <p class="subtitle">Оцени каждую сферу от 0 до 10 - и получи честный анализ своей жизни прямо сейчас</p>
+  </header>
+
+  <div class="main-grid">
+    <div class="sliders-panel">
+      <p class="panel-title">Сферы жизни</p>
+      <div id="sliders-container"></div>
+      <button class="btn-reset" onclick="resetAll()">Сбросить всё</button>
+    </div>
+    <div class="wheel-panel">
+      <canvas id="wheel" width="400" height="400"></canvas>
+      <div class="score-card">
+        <div>
+          <p class="score-label">Средний балл</p>
+          <p class="score-big" id="avg-score">0 <span>/ 10</span></p>
+        </div>
+        <button class="btn-analyze" id="btn-analyze" onclick="openModal()" disabled>Анализ</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="analysis-wrap" id="analysis-wrap" style="display:none">
+    <div class="analysis-card">
+      <p class="panel-title">Анализ твоего колеса</p>
+      <div id="analysis-inner"></div>
+    </div>
+  </div>
+
+  <footer-note>Не нужен повод выглядеть так, будто ты владеешь миром</footer-note>
+</div>
+
+<script>
+const TG_TOKEN = '8693111833:AAGPBCuu5EkUZaZk9YxOZxyJV5W7ZfyNq2A';
+const TG_CHAT  = '998564952';
+
+const SEGMENTS = [
+  { key: 'health',  label: 'Здоровье',           short: 'Здоровье', color: '#8fbc8f' },
+  { key: 'money',   label: 'Деньги / Финансы',    short: 'Финансы',  color: '#c4963a' },
+  { key: 'career',  label: 'Карьера / Дело',      short: 'Карьера',  color: '#6b8fa8' },
+  { key: 'family',  label: 'Семья',               short: 'Семья',    color: '#b07a9c' },
+  { key: 'love',    label: 'Любовь / Партнёр',    short: 'Любовь',   color: '#c07070' },
+  { key: 'friends', label: 'Друзья / Окружение',  short: 'Друзья',   color: '#9a8ccc' },
+  { key: 'growth',  label: 'Развитие',            short: 'Развитие', color: '#6bab9a' },
+  { key: 'leisure', label: 'Яркость жизни',       short: 'Яркость',  color: '#d4936a' },
+];
+
+const values = {};
+SEGMENTS.forEach(s => values[s.key] = 0);
+
+const container = document.getElementById('sliders-container');
+SEGMENTS.forEach((seg, i) => {
+  const row = document.createElement('div');
+  row.className = 'segment-row';
+  row.style.animationDelay = `${i * 0.06}s`;
+  row.innerHTML = `
+    <div class="seg-header">
+      <span class="seg-name">${seg.label}</span>
+      <span class="seg-value" id="val-${seg.key}">0</span>
+    </div>
+    <input type="range" min="0" max="10" value="0" step="1"
+      id="slider-${seg.key}" style="--pct: 0%"
+      oninput="onSlide('${seg.key}', this)">
+  `;
+  container.appendChild(row);
+});
+
+function onSlide(key, el) {
+  const v = parseInt(el.value);
+  values[key] = v;
+  el.style.setProperty('--pct', (v / 10 * 100) + '%');
+  document.getElementById('val-' + key).textContent = v;
+  drawWheel(); updateScore();
+}
+
+function resetAll() {
+  SEGMENTS.forEach(seg => {
+    values[seg.key] = 0;
+    const el = document.getElementById('slider-' + seg.key);
+    el.value = 0; el.style.setProperty('--pct', '0%');
+    document.getElementById('val-' + seg.key).textContent = '0';
+  });
+  drawWheel(); updateScore();
+  document.getElementById('analysis-wrap').style.display = 'none';
+}
+
+function updateScore() {
+  const avg = SEGMENTS.reduce((a,s) => a + values[s.key], 0) / SEGMENTS.length;
+  document.getElementById('avg-score').innerHTML = avg.toFixed(1) + ' <span>/ 10</span>';
+  document.getElementById('btn-analyze').disabled = SEGMENTS.filter(s => values[s.key] > 0).length < 5;
+}
+
+// Canvas
+const canvas = document.getElementById('wheel');
+const ctx = canvas.getContext('2d');
+const CX = 200, CY = 200, R = 160, INNER = 18;
+const N = SEGMENTS.length, STEP = (Math.PI * 2) / N, START = -Math.PI / 2;
+
+function drawWheel() {
+  ctx.clearRect(0, 0, 400, 400);
+  ctx.beginPath(); ctx.arc(CX, CY, R + 2, 0, Math.PI * 2); ctx.fillStyle = '#f5f0e8'; ctx.fill();
+  for (let r = 1; r <= 10; r++) {
+    const rr = INNER + (R - INNER) * (r / 10);
+    ctx.beginPath(); ctx.arc(CX, CY, rr, 0, Math.PI * 2);
+    ctx.strokeStyle = (r === 5 || r === 10) ? 'rgba(196,150,58,0.25)' : 'rgba(26,22,16,0.06)';
+    ctx.lineWidth = r === 10 ? 1.5 : 0.8; ctx.stroke();
+  }
+  SEGMENTS.forEach((_, i) => {
+    const a = START + i * STEP;
+    ctx.beginPath();
+    ctx.moveTo(CX + Math.cos(a) * INNER, CY + Math.sin(a) * INNER);
+    ctx.lineTo(CX + Math.cos(a) * R, CY + Math.sin(a) * R);
+    ctx.strokeStyle = 'rgba(26,22,16,0.08)'; ctx.lineWidth = 1; ctx.stroke();
+  });
+  ctx.beginPath();
+  SEGMENTS.forEach((seg, i) => {
+    const angle = START + i * STEP + STEP / 2;
+    const pr = INNER + (R - INNER) * (values[seg.key] / 10);
+    const x = CX + Math.cos(angle) * pr, y = CY + Math.sin(angle) * pr;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.closePath();
+  const grad = ctx.createRadialGradient(CX, CY, 0, CX, CY, R);
+  grad.addColorStop(0, 'rgba(196,150,58,0.35)'); grad.addColorStop(1, 'rgba(196,150,58,0.08)');
+  ctx.fillStyle = grad; ctx.fill();
+  ctx.strokeStyle = 'rgba(196,150,58,0.7)'; ctx.lineWidth = 1.5; ctx.stroke();
+  SEGMENTS.forEach((seg, i) => {
+    const a1 = START + i * STEP, a2 = a1 + STEP, mid = (a1 + a2) / 2;
+    const v = values[seg.key], pr = INNER + (R - INNER) * (v / 10);
+    if (v > 0) {
+      ctx.beginPath(); ctx.moveTo(CX, CY); ctx.arc(CX, CY, pr, a1, a2); ctx.closePath();
+      ctx.fillStyle = seg.color + '28'; ctx.fill();
+      const dx = CX + Math.cos(mid) * pr, dy = CY + Math.sin(mid) * pr;
+      ctx.beginPath(); ctx.arc(dx, dy, 4, 0, Math.PI * 2); ctx.fillStyle = seg.color; ctx.fill();
+    }
+    const lx = CX + Math.cos(mid) * (R + 22), ly = CY + Math.sin(mid) * (R + 22);
+    ctx.save(); ctx.translate(lx, ly);
+    ctx.font = '500 9.5px Montserrat, sans-serif'; ctx.fillStyle = '#1a1610';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(seg.short.toUpperCase(), 0, 0); ctx.restore();
+  });
+  ctx.beginPath(); ctx.arc(CX, CY, INNER, 0, Math.PI * 2);
+  ctx.fillStyle = '#faf7f2'; ctx.fill();
+  ctx.strokeStyle = 'rgba(196,150,58,0.4)'; ctx.lineWidth = 1; ctx.stroke();
+}
+drawWheel(); updateScore();
+
+function openModal() { document.getElementById('modal-overlay').classList.add('active'); }
+
+async function sendToTelegram(phone, name) {
+  const avg = (SEGMENTS.reduce((a,s) => a + values[s.key], 0) / SEGMENTS.length).toFixed(1);
+  const scores = SEGMENTS.map(s => `${s.label}: ${values[s.key]}/10`).join('\n');
+  const msg = `🌀 Новая заявка с Колеса Баланса\n\n👤 Имя: ${name || 'не указано'}\n📱 Телефон: ${phone || 'не указан'}\n\n📊 Средний балл: ${avg}/10\n\n${scores}`;
+  try {
+    await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: TG_CHAT, text: msg })
+    });
+  } catch(e) {}
+}
+
+async function submitAndAnalyze() {
+  const phone = document.getElementById('phone-input').value.trim();
+  const name  = document.getElementById('name-input').value.trim();
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = true; btn.textContent = '...';
+  await sendToTelegram(phone, name);
+  document.getElementById('modal-overlay').classList.remove('active');
+  runAnalysis();
+}
+function skipAndAnalyze() {
+  document.getElementById('modal-overlay').classList.remove('active');
+  runAnalysis();
+}
+
+// ---- SMART ANALYSIS ENGINE ----
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function generateAnalysis() {
+  const v = values;
+  const sorted = [...SEGMENTS].sort((a,b) => v[b.key] - v[a.key]);
+  const avg = SEGMENTS.reduce((a,s) => a + v[s.key], 0) / SEGMENTS.length;
+  const max = sorted[0], min = sorted[sorted.length - 1];
+  const low  = sorted.filter(s => v[s.key] <= 3);
+  const high = sorted.filter(s => v[s.key] >= 8);
+  const spread = v[max.key] - v[min.key];
+
+  // --- Paragraph 1: общая картина ---
+  let p1 = '';
+  if (avg >= 7.5) {
+    p1 = pick([
+      `Твоё колесо говорит о человеке, который умеет держать жизнь в руках. Средний балл выше ${avg.toFixed(1)} - это не случайность, это результат осознанных выборов. Ты, скорее всего, давно привыкла брать ответственность за своё состояние, и это видно в каждой сфере.`,
+      `Картина в целом сильная. Жизнь сейчас идёт в хорошем темпе - есть ощущение движения, есть опоры. Средний ${avg.toFixed(1)} из 10 говорит о том, что большинство сфер под контролем, и это само по себе ценно.`
+    ]);
+  } else if (avg >= 5) {
+    p1 = pick([
+      `Колесо показывает человека в переходном моменте. Средний балл ${avg.toFixed(1)} - это не плохо и не хорошо, это точка, откуда виден как прогресс, так и зоны роста. Жизнь сейчас, скорее всего, ощущается как "в целом нормально, но чего-то не хватает".`,
+      `Твоя картина - это жизнь в режиме "справляюсь". Где-то хорошо, где-то тянешь на силе воли. Средний ${avg.toFixed(1)} говорит о том, что ресурс есть, но он распределён неравномерно - и это именно то, с чем работают.`
+    ]);
+  } else {
+    p1 = pick([
+      `Честный взгляд на колесо показывает: сейчас сложный период. Средний ${avg.toFixed(1)} из 10 - это сигнал не паниковать, а остановиться и разобраться. Такие моменты бывают у всех, и именно они часто становятся точкой настоящих изменений.`,
+      `Колесо отражает усталость и накопившееся напряжение. Низкие оценки сразу в нескольких сферах - это не слабость, это честность. И первый шаг к тому, чтобы что-то изменить, уже сделан - ты видишь картину такой, какая она есть.`
+    ]);
+  }
+
+  // --- Paragraph 2: главный дисбаланс ---
+  let p2 = '';
+  if (spread >= 6) {
+    const highLabel = high.length > 0 ? high[0].label : max.label;
+    const lowLabel = low.length > 0 ? low[0].label : min.label;
+    p2 = pick([
+      `Главное, что бросается в глаза - сильный перекос между "${highLabel}" и "${lowLabel}". Разрыв в ${spread} баллов говорит о том, что энергия и внимание сосредоточены в одном месте, пока другое "тихо кричит". Колесо с таким дисбалансом не катится - оно скачет, и ты это чувствуешь как хроническое ощущение, что что-то не так, даже когда всё вроде бы в порядке.`,
+      `Дисбаланс здесь очевидный и существенный. "${highLabel}" - твоя сила, и это хорошо. Но "${lowLabel}" на ${v[min.key]} из 10 - это не просто низкая оценка, это место утечки энергии. Когда одна сфера жизни долго остаётся без внимания, она начинает тянуть вниз всё остальное - даже те области, которые ты считаешь успешными.`
+    ]);
+  } else if (low.length > 0) {
+    const lowLabel = low[0].label;
+    p2 = pick([
+      `Нет одного критического провала, но есть сфера, которая требует внимания прямо сейчас - это "${lowLabel}". ${v[low[0].key]} из 10 в этой области означает, что она либо давно в режиме "потом", либо там накопилось что-то, с чем трудно смотреть в глаза. Именно такие "тихие" зоны чаще всего влияют на общее ощущение жизни.`,
+      `Колесо в целом ровное, но "${lowLabel}" - это слабое звено. Такие вещи работают по принципу сосудов: сколько бы ты ни вкладывала в другие сферы, ощущение наполненности будет ускользать, пока эта зона остаётся закрытой.`
+    ]);
+  } else {
+    p2 = `Явного критичного дисбаланса нет - и это само по себе достижение. Но ровная картина иногда скрывает другую проблему: когда всё "нормально", труднее всего понять, куда расти и что на самом деле хочется. Следующий уровень для тебя - не закрытие дыр, а выбор направления, в котором ты хочешь сделать жизнь по-настоящему яркой.`;
+  }
+
+  // --- Paragraph 3: точка опоры ---
+  let p3 = '';
+  if (high.length > 0) {
+    const h = high[0];
+    p3 = pick([
+      `Твоя опора - это "${h.label}" с оценкой ${v[h.key]}. Это не просто высокий балл - это область, где ты чувствуешь себя собой, где есть уверенность и ресурс. Именно отсюда стоит начинать любые изменения: не из слабых мест, а из силы.`,
+      `"${h.label}" - это то, что у тебя работает, и это настоящая ценность. Оценка ${v[h.key]} говорит о том, что в этой сфере ты знаешь, как создавать результат. Этот навык - переносить то, что работает здесь, в другие области - и есть главный инструмент роста.`
+    ]);
+  } else {
+    const best = sorted[0];
+    p3 = `Даже если ни одна сфера не дотягивает до "отлично", "${best.label}" - это твоя относительная сила прямо сейчас. ${v[best.key]} из 10 - достаточно, чтобы использовать эту область как точку опоры для первых шагов.`;
+  }
+
+  // --- Paragraph 4: следующий шаг ---
+  let p4 = '';
+  const weakest = sorted[sorted.length - 1];
+  const stepMap = {
+    health:  'выдели 20 минут завтра утром только для себя - без телефона, без задач. Просто тело и тишина.',
+    money:   'запиши на бумаге одну конкретную финансовую цель на ближайшие 90 дней - не мечту, а измеримый результат.',
+    career:  'ответь себе честно на один вопрос: что в работе сейчас забирает больше всего энергии? Ответ укажет направление.',
+    family:  'позвони или напиши кому-то из близких сегодня - не по делу, а просто так. Маленький жест меняет температуру отношений.',
+    love:    'скажи партнёру одну вещь, которую ты давно не говорила вслух. Или, если отношений нет, ответь себе: что мешает их появлению.',
+    friends:'назначь встречу с кем-то важным - не "как-нибудь", а конкретную дату. Связи требуют действия, а не намерений.',
+    growth:  'выбери одну тему, которую хочешь изучить, и потрать на неё 30 минут сегодня. Не курс, не программу - просто начни.',
+    leisure: 'запланируй одно удовольствие на эту неделю - то, что ты постоянно откладываешь ради "важных дел". И не переноси.'
+  };
+  p4 = `Один шаг, с которого стоит начать: ${stepMap[weakest.key]} Не список, не план, не система. Одно действие - и ты уже в движении.`;
+
+  return [p1, p2, p3, p4];
+}
+
+function runAnalysis() {
+  const wrap = document.getElementById('analysis-wrap');
+  const inner = document.getElementById('analysis-inner');
+  wrap.style.display = 'block';
+  wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  const sorted = [...SEGMENTS].sort((a,b) => values[b.key] - values[a.key]);
+  const low  = sorted.filter(s => values[s.key] <= 4);
+  const mid  = sorted.filter(s => values[s.key] >= 5 && values[s.key] <= 7);
+  const high = sorted.filter(s => values[s.key] >= 8);
+
+  function boxItems(arr) {
+    return arr.slice(0,3).map(s => `
+      <div class="item">
+        <span class="item-name">${s.label}</span>
+        <span class="item-score">${values[s.key]}</span>
+      </div>`).join('');
+  }
+
+  const paragraphs = generateAnalysis();
+  const analysisHtml = paragraphs.map(p => `<p>${p}</p>`).join('');
+
+  inner.innerHTML = `
+    <div class="insights-grid">
+      ${low.length  ? `<div class="insight-box low"><div class="insight-label">Требуют внимания</div><div class="insight-items">${boxItems(low.sort((a,b)=>values[a.key]-values[b.key]))}</div></div>` : ''}
+      ${mid.length  ? `<div class="insight-box mid"><div class="insight-label">В процессе</div><div class="insight-items">${boxItems(mid)}</div></div>` : ''}
+      ${high.length ? `<div class="insight-box high"><div class="insight-label">Твоя сила</div><div class="insight-items">${boxItems(high.sort((a,b)=>values[b.key]-values[a.key]))}</div></div>` : ''}
+    </div>
+    <div class="analysis-divider"></div>
+    <div class="analysis-text">${analysisHtml}</div>
+  `;
+}
+</script>
+</body>
+</html>
